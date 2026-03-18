@@ -2,25 +2,38 @@ import React, { useState, useEffect } from 'react';
 import './App.css';
 
 function App() {
+  // --- State Management ---
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [loading, setLoading] = useState(false);
+  
+  // Requirement: Theme toggle state with LocalStorage persistence
+  const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
 
-  // Requirement: Implement lazy loading/debounce to optimize search efficiency
+  // --- Effects ---
+
+  // Handle Theme Changes
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  // Requirement: Lazy Loading / Debounce Logic
+  // Search only triggers after 3 characters and waits 300ms
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
-      // Requirement: Search should only trigger after 3 characters
       if (query.trim().length >= 3) {
         fetchStudents(query);
       } else {
         setResults([]);
       }
-    }, 300); // 300ms delay
+    }, 300);
 
     return () => clearTimeout(delayDebounceFn);
   }, [query]);
 
+  // --- API Logic ---
   const fetchStudents = async (searchTerm) => {
     setLoading(true);
     try {
@@ -29,13 +42,19 @@ function App() {
       const data = await response.json();
       setResults(data);
     } catch (error) {
-      console.error("Error fetching data:", error);
+      console.error("Error fetching student data:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  // Bonus: Helper function to highlight matching text
+  // --- Helper Functions ---
+
+  const toggleTheme = () => {
+    setTheme(prev => (prev === 'light' ? 'dark' : 'light'));
+  };
+
+  // Bonus: Case-insensitive highlight matching text
   const highlightMatch = (text, highlight) => {
     if (!highlight.trim()) return text;
     const parts = text.split(new RegExp(`(${highlight})`, 'gi'));
@@ -43,7 +62,7 @@ function App() {
       <span>
         {parts.map((part, i) => 
           part.toLowerCase() === highlight.toLowerCase() ? (
-            <mark key={i} style={{ backgroundColor: '#fef08a', padding: '0 2px', borderRadius: '2px' }}>
+            <mark key={i} className="highlight-text">
               {part}
             </mark>
           ) : (
@@ -56,9 +75,15 @@ function App() {
 
   return (
     <div className="App">
+      {/* Theme Toggle Button */}
+      <button className="theme-toggle" onClick={toggleTheme}>
+        {theme === 'light' ? '🌙 Dark Mode' : '☀️ Light Mode'}
+      </button>
+
       <h1>Student Search Portal</h1>
       
       <div className="search-container">
+        {/* Requirement: Search Bar */}
         <input
           type="text"
           placeholder="Search by name (min. 3 characters)..."
@@ -68,14 +93,14 @@ function App() {
         
         {loading && <div className="loader">Searching...</div>}
 
-        {/* Requirement: Dropdown list displaying up to 5 matching students */}
+        {/* Requirement: Dropdown list (up to 5 matching students) */}
         {results.length > 0 && (
           <ul className="dropdown">
             {results.map((student) => (
               <li key={student.rollNumber} onClick={() => {
                 setSelectedStudent(student);
                 setResults([]); // Close dropdown
-                setQuery('');   // Reset search
+                setQuery('');   // Reset search bar
               }}>
                 <div className="result-item">
                   <span className="name">{highlightMatch(student.name, query)}</span>
@@ -86,13 +111,13 @@ function App() {
           </ul>
         )}
 
-        {/* Edge Case: No results found */}
+        {/* Edge Case: Handling names with no matches */}
         {query.length >= 3 && !loading && results.length === 0 && (
-          <div className="no-results">No students found matching "{query}"</div>
+          <div className="no-results">No students found for "{query}"</div>
         )}
       </div>
 
-      {/* Requirement: Display full details when a student is selected */}
+      {/* Requirement: Display full details upon selection */}
       {selectedStudent && (
         <div className="student-card">
           <div className="card-header">
@@ -101,7 +126,7 @@ function App() {
           </div>
           <div className="card-body">
             <p><strong>Full Name:</strong> {selectedStudent.name}</p>
-            <p><strong>Class:</strong> {selectedStudent.class}</p>
+            <p><strong>Class:</strong> Grade {selectedStudent.class}</p>
             <p><strong>Roll Number:</strong> {selectedStudent.rollNumber}</p>
           </div>
         </div>
