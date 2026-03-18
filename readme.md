@@ -19,7 +19,7 @@ A high-performance Single Page Application (SPA) built with **React.js** and **N
 
 ## Installation & Setup
 
-### 1. Clone the Repository
+### Clone the Repository
 ```bash
 git clone <your-repo-link>
 cd student-search-app
